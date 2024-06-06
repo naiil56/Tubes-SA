@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Exchange - Tubes SA</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styless2.css">
+</head>
+<body>
+    <nav>
+        <a href="home.html">Home</a>
+        <a href="about.html">About</a>
+    </nav>
+    <div class="container">
+        <h2>Penukaran Uang</h2>
+        <p>Masukan Jumlah Uang dan Jumlah Lembaran</p>
+        <input type="number" id="jumlahuang" placeholder="Jumlah uang yang ingin ditukar (Misal: 50000)">
+        <input type="number" id="lembar" placeholder="Jumlah lembaran yang ingin diambil (Misal: 5)">
+        <select id="algoritma">
+            <option value="dp">Dynamic Programming</option>
+            <option value="backtrack">Backtracking Algorithm</option>
+        </select>
+        <button onclick="solveCoinChange()">Solve</button>
+        <p id="hasil"></p>
+        <p id="kombinasi"></p>
+    </div>
+    <script>
+        function coinChangeDynamicProgramming(pecahan, target, jLembar) {
+            const dp = Array.from({ length: jLembar + 1 }, () => Array(target + 1).fill(Infinity));
+            dp[0][0] = 0;
+
+            for (let i = 1; i <= jLembar; i++) {
+                for (let j = 0; j <= target; j++) {
+                    for (let coin of pecahan) {
+                        if (j >= coin) {
+                            dp[i][j] = Math.min(dp[i][j], dp[i - 1][j - coin] + 1);
+                        }
+                    }
+                }
+            }
+
+            if (dp[jLembar][target] === Infinity) {
+                return [-1, []];
+            }
+
+            const kombinasiUang = [];
+            let lembarP = jLembar;
+            let remainingAmount = target;
+
+            while (lembarP > 0 && remainingAmount > 0) {
+                for (let coin of pecahan) {
+                    if (remainingAmount >= coin && dp[lembarP][remainingAmount] === dp[lembarP - 1][remainingAmount - coin] + 1) {
+                        kombinasiUang.push(coin);
+                        remainingAmount -= coin;
+                        break;
+                    }
+                }
+                lembarP--;
+            }
+
+            return [dp[jLembar][target], kombinasiUang];
+        }
+
+        function coinChangeBacktrack(pecahan, target, jLembar) {
+            const memo = {};
+
+            function backtrack(uang, idx, lembarP, kombinasi) {
+                if (uang === 0 && lembarP >= jLembar) {
+                    return [0, kombinasi];
+                }
+                if (uang < 0 || idx >= pecahan.length || lembarP >= jLembar) {
+                    return [Infinity, []];
+                }
+                if (memo.hasOwnProperty(`${uang}-${idx}-${lembarP}`)) {
+                    return memo[`${uang}-${idx}-${lembarP}`];
+                }
+
+                const [useCoin, useCombination] = backtrack(uang - pecahan[idx], idx, lembarP + 1, kombinasi.concat(pecahan[idx]));
+                const useCoinCount = useCoin + 1;
+
+                const [skipCoin, skipCombination] = backtrack(uang, idx + 1, lembarP, kombinasi);
+
+                const result = useCoinCount < skipCoin ? [useCoinCount, useCombination] : [skipCoin, skipCombination];
+                memo[`${uang}-${idx}-${lembarP}`] = result;
+                return result;
+            }
+
+            const [minCoinsNeeded, kombinasiUang] = backtrack(target, 0, 0, []);
+            if (minCoinsNeeded === Infinity) {
+                return [-1, []];
+            }
+            return [minCoinsNeeded, kombinasiUang];
+        }
+
+        function solveCoinChange() {
+            const jumlahUang = parseInt(document.getElementById('jumlahuang').value);
+            const jLembar = parseInt(document.getElementById('lembar').value);
+            const algoritma = document.getElementById('algoritma').value;
+            const pecahan = [100000, 50000, 20000, 10000, 5000, 2000, 1000];
+
+            let result;
+            if (algoritma === 'dp') {
+                result = coinChangeDynamicProgramming(pecahan, jumlahUang, jLembar);
+            } else if (algoritma === 'backtrack') {
+                result = coinChangeBacktrack(pecahan, jumlahUang, jLembar);
+            }
+
+            const [jumlahLembar, kombinasiUang] = result;
+            if (jumlahLembar === -1) {
+                document.getElementById('hasil').innerText = 'Tidak ada solusi yang tersedia';
+                document.getElementById('kombinasi').innerText = '';
+            } else {
+                document.getElementById('hasil').innerText = `Jumlah Lembar: ${jumlahLembar}`;
+                document.getElementById('kombinasi').innerText = `Kombinasi Uang: ${kombinasiUang.join(', ')}`;
+            }
+        }
+    </script>
+</body>
+</html>
